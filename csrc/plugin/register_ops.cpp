@@ -34,6 +34,9 @@ TORCH_LIBRARY(mindiesd, m)
     m.def("adaln(Tensor x, Tensor scale, Tensor shift, Tensor? weight=None, \
         Tensor? bias=None, float? epsilon=1e-5) \
         -> Tensor");
+    m.def("adaln_v2(Tensor x, Tensor scale, Tensor shift, Tensor? weight=None, \
+        Tensor? bias=None, float? epsilon=1e-5) \
+        -> (Tensor, Tensor, Tensor)");
     m.def("la_preprocess(Tensor query, Tensor key, Tensor value, int align_len=256) \
         -> (Tensor, Tensor, Tensor)");
     m.def("rainfusionattention(Tensor query, Tensor key, Tensor value, Tensor select_idx, \
@@ -65,6 +68,7 @@ TORCH_LIBRARY_IMPL(mindiesd, PrivateUse1, m)
     m.impl("rope", &rope_mindie_sd_impl_npu);
     m.impl("la", &la_mindie_sd_impl_npu);
     m.impl("adaln", &adaln_mindie_sd_impl_npu);
+    m.impl("adaln_v2", &adaln_v2_mindie_sd_impl_npu);
     m.impl("la_preprocess", &la_preprocess_mindie_sd_impl_npu);
     m.impl("rainfusionattention", &rainfusionattention_mindie_sd_impl_npu);
     m.impl("block_sparse_attention", &block_sparse_attention_impl_npu);
