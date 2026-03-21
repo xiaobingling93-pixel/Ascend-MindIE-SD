@@ -15,16 +15,10 @@ from pathlib import Path
 
 import torch
 from ..utils import ParametersInvalid, file_utils
+from ..utils.get_platform import get_npu_device, NPUDevice
 from . import _custom_ops as ops
 
-current_path = Path(__file__).resolve()
-if len(current_path.parents) < 2:
-    raise ParametersInvalid("The parents level is insufficient.")
-ops_path = current_path.parents[1] / "plugin"
-ops_path = file_utils.standardize_path(str(ops_path))
-ops_file = os.path.join(ops_path, "libPTAExtensionOPS.so")
-file_utils.check_file_safety(ops_file, permission_mode=file_utils.BINARY_FILE_PERMISSION)
-torch.ops.load_library(ops_file)
+npu_device = get_npu_device()
 
 
 def check_input_params(layernorm, x, scale, shift, fused):
@@ -98,14 +92,24 @@ def layernorm_scale_shift(
         else:
             weight = None
             bias = None
-        out = ops.adaln(
-            x=x, 
-            scale=scale, 
-            shift=shift,
-            weight=weight, 
-            bias=bias, 
-            epsilon=layernorm.eps
-        )
+        if npu_device == NPUDevice.A5:
+            out = ops.adaln_v2(
+                x=x,
+                scale=scale,
+                shift=shift,
+                weight=weight,
+                bias=bias,
+                epsilon=layernorm.eps
+            )[0]
+        else:
+            out = ops.adaln(
+                x=x, 
+                scale=scale, 
+                shift=shift,
+                weight=weight, 
+                bias=bias, 
+                epsilon=layernorm.eps
+            )
     else:
         if scale.dim() == 2:
             scale = scale[:, None]

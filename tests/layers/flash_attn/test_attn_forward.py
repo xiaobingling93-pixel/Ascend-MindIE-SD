@@ -12,20 +12,18 @@
 
 import unittest
 from unittest.mock import patch
-
-import sys
+import os
 import time
 
 import torch
-
-sys.path.append('../')
-
 from device import DEVICE_ID
 from mindiesd.layers.flash_attn.common import AttentionParam
 from mindiesd.layers.flash_attn.attention_forward import attention_forward
-from tests.utils.utils.precision_compare import data_compare
+from mindiesd.utils.exception import ParametersInvalid
+from utils.utils.precision_compare import data_compare
 
 
+@unittest.skipIf(os.environ.get("MINDIE_TEST_MODE", "ALL") == "CPU", "Skip NPU-dependent tests when MINDIE_TEST_MODE is CPU.")
 class TestAttentionFunc(unittest.TestCase):
     def test_attn_forward_no_fused_bsnd(self):
         attention_shape = [2, 32, 16, 64]
@@ -228,6 +226,27 @@ class TestAttentionFunc(unittest.TestCase):
         out_fused = attention_forward(
             query, key, value, head_first=True, opt_mode="manual", op_type="ascend_laser_attention", layout="BNSD")
         self.assertIsNotNone(out_fused)
+    
+    def test_attn_forward_manual_env(self):
+        attention_shape = [2, 16, 5120, 64]
+        device = "npu"
+        query = torch.randn(attention_shape, dtype=torch.float16).to(device)
+        key = torch.randn(attention_shape, dtype=torch.float16).to(device)
+        value = torch.randn(attention_shape, dtype=torch.float16).to(device)
+        out_fused_pfa = attention_forward(
+            query, key, value, head_first=True, opt_mode="manual", op_type="prompt_flash_attn", layout="BNSD")
+        os.environ["MINDIE_SD_FA_TYPE"] = "prompt_flash_attn"
+        out_fused_env = attention_forward(
+            query, key, value, head_first=True, opt_mode="manual", layout="BNSD")
+        result, _, max_error = data_compare(out_fused_env.cpu(), out_fused_pfa.cpu())
+        self.assertEqual(result, "success", msg=f"Data compare failed. Max error is: {max_error}")
+
+        os.environ["MINDIE_SD_FA_TYPE"] = "test"
+        with self.assertRaises(ParametersInvalid):
+            out_fused_env = attention_forward(
+            query, key, value, head_first=True, opt_mode="manual", layout="BNSD")
+        os.environ.pop("MINDIE_SD_FA_TYPE", None)
+
 
 if __name__ == '__main__':
     import torch_npu

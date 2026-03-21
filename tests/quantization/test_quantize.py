@@ -9,7 +9,7 @@
 # EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 # See the Mulan PSL v2 for more details.
-
+import os
 import importlib
 import unittest
 from unittest import mock
@@ -17,10 +17,10 @@ import json
 import torch
 import torch.nn as nn
 from mindiesd.quantization.config import QuantConfig, LayerQuantConfig
-from mindiesd.quantization.layer import W8A8QuantBaseLinear, WeightQuantLinear, W8A8MXFP8QuantLinear
+from mindiesd.quantization.layer import W8A8QuantBaseLinear, WeightQuantLinear, FP8RotateQuantFA, W8A8MXFP8QuantLinear, W4A4QuantLinear
 from mindiesd.quantization.mode import QuantAlgorithm
 from mindiesd.quantization.quantize import smooth_quantize_w8a8, smooth_quantize, quantize
-from mindiesd.quantization.quantize import weight_quantize, w8a16_quantize
+from mindiesd.quantization.quantize import weight_quantize, w8a16_quantize, add_fa_quant
 from mindiesd.quantization.quantize import get_cfg_and_weights
 from mindiesd.utils import ParametersInvalid, ConfigError
 
@@ -47,6 +47,7 @@ def create_mock_handler(mock_data):
     return MockSafeTensorHandler(mock_data)
 
 
+@unittest.skipIf(os.environ.get("MINDIE_TEST_MODE", "ALL") == "CPU", "Skip NPU-dependent tests when MINDIE_TEST_MODE is CPU.")
 class TestSmoothQuantize(unittest.TestCase):
     def setUp(self):
         in_features = 10
@@ -79,12 +80,27 @@ class TestSmoothQuantize(unittest.TestCase):
             "0.linear.bias": torch.ones(out_features, dtype=torch.float32),
             "0.div.mul_scale": torch.ones(out_features, dtype=torch.float32)
         }
+        in_features_w4a4 = 8
+        out_features_w4a4 = 8
+        self.weights5 = {
+            "0.linear.weight": torch.ones(out_features_w4a4, in_features_w4a4, dtype=torch.int8),
+            "0.linear.weight_scale": torch.ones(out_features_w4a4, out_features_w4a4, dtype=torch.float32),
+            "0.linear.bias": torch.ones(out_features_w4a4, dtype=torch.float32),
+            "0.div.mul_scale": torch.ones(out_features_w4a4, dtype=torch.float32)
+        }
 
     def test_smooth_quantize_w8a8_with_linear(self):
         layer = nn.Linear(10, 10)
         cfg = QuantConfig()
         quant_layer, is_modified = smooth_quantize_w8a8("0", layer, cfg, create_mock_handler(self.weights))
         self.assertIsInstance(quant_layer, W8A8QuantBaseLinear)
+        self.assertTrue(is_modified)
+    
+    def test_smooth_quantize_w4a4_with_linear(self):
+        layer = nn.Linear(8, 8)
+        cfg = QuantConfig(quant_algo=QuantAlgorithm.W4A4_DYNAMIC)
+        quant_layer, is_modified = smooth_quantize_w8a8("0", layer, cfg, create_mock_handler(self.weights5))
+        self.assertIsInstance(quant_layer, W4A4QuantLinear)
         self.assertTrue(is_modified)
 
     def test_smooth_quantize_w8a8_with_anti_linear(self):
@@ -138,6 +154,7 @@ class TestSmoothQuantize(unittest.TestCase):
         self.assertFalse(is_modified)
 
 
+@unittest.skipIf(os.environ.get("MINDIE_TEST_MODE", "ALL") == "CPU", "Skip NPU-dependent tests when MINDIE_TEST_MODE is CPU.")
 class TestQuantize(unittest.TestCase):
     def setUp(self):
         in_features = 10
@@ -257,6 +274,7 @@ class TestQuantize(unittest.TestCase):
             quantized_model = quantize(model, "path/to/quant_des.json")
 
 
+@unittest.skipIf(os.environ.get("MINDIE_TEST_MODE", "ALL") == "CPU", "Skip NPU-dependent tests when MINDIE_TEST_MODE is CPU.")
 class TestWeightQuantize(unittest.TestCase):
     def setUp(self):
         in_features = 8
@@ -312,6 +330,35 @@ class TestWeightQuantize(unittest.TestCase):
         self.assertTrue(is_modified)
 
 
+@unittest.skipIf(os.environ.get("MINDIE_TEST_MODE", "ALL") == "CPU", "Skip NPU-dependent tests when MINDIE_TEST_MODE is CPU.")
+class TestAddFAQuant(unittest.TestCase):
+    def setUp(self):
+        self.weights = {
+            "test_layer.q_rot": torch.randn(128, 128, dtype=torch.float16),
+            "test_layer.k_rot": torch.randn(128, 128, dtype=torch.float16),
+        }
+
+    def test_add_fa_quant_with_valid_layer(self):
+        # 创建一个具有必要属性的模拟层
+        class MockLayer(nn.Module):
+            def __init__(self):
+                super().__init__()
+
+        layer = MockLayer()
+        cfg = QuantConfig(quant_algo=QuantAlgorithm.FP8_DYNAMIC)
+        add_fa_quant(layer, cfg, "test_layer", create_mock_handler(self.weights))
+        self.assertTrue(hasattr(layer, 'fa_quant'))
+        self.assertIsInstance(layer.fa_quant, FP8RotateQuantFA)
+
+    def test_add_fa_quant_with_invalid_layer(self):
+        # 创建一个没有必要属性的层
+        layer = nn.Linear(10, 10)
+        cfg = QuantConfig(quant_algo=QuantAlgorithm.NO_QUANT)
+        add_fa_quant(layer, cfg, "test_layer", self.weights)
+        self.assertFalse(hasattr(layer, 'fa_quant'))
+
+
+@unittest.skipIf(os.environ.get("MINDIE_TEST_MODE", "ALL") == "CPU", "Skip NPU-dependent tests when MINDIE_TEST_MODE is CPU.")
 class TestGetCfgAndWeights(unittest.TestCase):
     def setUp(self):
         self.quant_des_path = "path/to/quant_des.json"

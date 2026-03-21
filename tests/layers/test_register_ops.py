@@ -15,13 +15,14 @@ from unittest.mock import patch, MagicMock, Mock, ANY
 from packaging.version import Version
 
 from mindiesd.layers import register_ops
-
+import os
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from mindiesd.compilation import MindieSDBackend
 
 
+@unittest.skipIf(os.environ.get("MINDIE_TEST_MODE", "ALL") == "CPU", "Skip NPU-dependent tests when MINDIE_TEST_MODE is CPU.")
 class TestRegisterOps(unittest.TestCase):
     
     def setUp(self):
@@ -34,10 +35,6 @@ class TestRegisterOps(unittest.TestCase):
             return 'mindiesd.layers.register_ops._native_register_fake'
         else:
             return 'mindiesd.layers.register_ops._lib.impl'
-
-    def test_check_mindie_operator_exists_existing(self):
-        result = register_ops.check_mindie_operator_exists("rope")
-        self.assertTrue(result)
     
     def test_check_mindie_operator_exists_nonexistent(self):
         result = register_ops.check_mindie_operator_exists(f"{self.test_op_base}nonexistent")

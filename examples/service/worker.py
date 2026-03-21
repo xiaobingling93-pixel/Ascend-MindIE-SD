@@ -103,7 +103,8 @@ class GeneratorWorker:
             "sparsity": args.sparsity,
             "skip_timesteps": args.sparse_start_step,
             "grid_size": None,
-            "atten_mask_all": None
+            "atten_mask_all": None,
+            "type": args.rainfusion_type
         }
 
         if dist.is_initialized():
@@ -143,7 +144,8 @@ class GeneratorWorker:
             "sparsity": self.sparsity,
             "skip_timesteps": self.sparse_start_step,
             "grid_size": None,
-            "atten_mask_all": None
+            "atten_mask_all": None,
+            "type": self.rainfusion_type
         }
         if self.use_rainfusion:
             if self.dit_fsdp:
@@ -218,6 +220,8 @@ class GeneratorWorker:
         self.use_rainfusion = args.use_rainfusion
         self.sparsity = args.sparsity
         self.sparse_start_step = args.sparse_start_step
+        self.rainfusion_type = rainfusion_config["type"]
+
         if args.tp_size > 1:
             logging.info("Initializing Tensor Parallel ...")
             applicator = TensorParallelApplicator(args.tp_size, device_map="cpu")
@@ -332,6 +336,8 @@ class GeneratorWorker:
 
     def _init_parallel_env(self, args):
         if self.world_size > 1:
+            torch.npu.set_device(0)
+
             dist.init_process_group(
                 backend="hccl",
                 init_method="env://",

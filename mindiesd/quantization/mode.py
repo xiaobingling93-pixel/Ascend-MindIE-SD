@@ -25,6 +25,7 @@ class QuantAlgorithm(StrEnum):
     W8A8 = "W8A8"
     W8A8_TIMESTEP = "W8A8_TIMESTEP"
     W8A8_DYNAMIC = "W8A8_DYNAMIC"
+    W4A4_DYNAMIC = "W4A4_DYNAMIC"
     W8A8_MXFP8 = "W8A8_MXFP8"
     W8A16 = "W8A16"
     W4A16 = "W4A16"
@@ -39,8 +40,10 @@ class QuantAlgorithm(StrEnum):
     W8A8_PER_TENSOR_PER_TOKEN = "W8A8_PER_TENSOR_PER_TOKEN"
     INT8 = "INT8"
     MIXED_PERCISION = "MIXED_PERCISION"
-    FAQUANT = "FAQUANT"
+    FP8_DYNAMIC = "FP8_DYNAMIC"
     NO_QUANT = "NO_QUANT"
+    W4A4_MXFP4_SVD = "W4A4_MXFP4_SVD"
+    W4A4_MXFP4_DUALSCALE = "W4A4_MXFP4_DUALSCALE"
 
 
 W8A8_LIST = [
@@ -53,6 +56,12 @@ W8A8_LIST = [
     QuantAlgorithm.W8A8_PER_CHANNEL_PER_TENSOR,
     QuantAlgorithm.W8A8_PER_TENSOR_PER_TOKEN,
     QuantAlgorithm.W8A8_MXFP8,
+]
+
+W4A4_LIST = [
+    QuantAlgorithm.W4A4_MXFP4_SVD,
+    QuantAlgorithm.W4A4_MXFP4_DUALSCALE,
+    QuantAlgorithm.W4A4_DYNAMIC,
 ]
 
 
@@ -168,10 +177,13 @@ class QuantMode():
             QuantAlgorithm.W8A8: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
             QuantAlgorithm.W8A8_TIMESTEP: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
             QuantAlgorithm.W8A8_DYNAMIC: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
+            QuantAlgorithm.W4A4_DYNAMIC: QuantMode.use_smooth_quant(per_token=True, per_channel=True),
             QuantAlgorithm.W8A8_PER_CHANNEL_PER_TOKEN: QuantMode.use_smooth_quant(per_token=True, per_channel=True),
             QuantAlgorithm.W8A8_PER_TENSOR_PER_TOKEN: QuantMode.use_smooth_quant(per_token=True, per_channel=False),
-            QuantAlgorithm.FAQUANT: QuantMode.from_descriptor(QuantModeDescriptor(use_fa_quant=True)),
+            QuantAlgorithm.FP8_DYNAMIC: QuantMode.from_descriptor(QuantModeDescriptor(use_fa_quant=True)),
             QuantAlgorithm.W8A8_MXFP8: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
+            QuantAlgorithm.W4A4_MXFP4_SVD: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
+            QuantAlgorithm.W4A4_MXFP4_DUALSCALE: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
         }
         return quant_mode_map.get(quant_algo, QuantMode(0))
 
