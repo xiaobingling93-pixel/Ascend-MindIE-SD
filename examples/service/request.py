@@ -10,7 +10,7 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 # See the Mulan PSL v2 for more details.
 
-from typing import Optional
+from typing import Optional, Tuple
 
 import torch
 import torch_npu
@@ -27,7 +27,7 @@ class GeneratorRequest(BaseModel):
     base_seed: Optional[int] = 0
     save_disk_path: Optional[str] = None
     size: Optional[str] = '1280*720'
-    sample_guide_scale: Optional[float] = None
+    sample_guide_scale: Optional[Tuple[float, float]] = None
     frame_num: Optional[int] = 81
     sample_shift: Optional[float] = None
     sample_solver: Optional[str] = 'unipc'
