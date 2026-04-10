@@ -6,7 +6,6 @@
 - [快速开始](./quick_start.md)
 - [安装指导](./installing_guide.md)
 - [环境变量配置](./environment_variable_configuration.md)
-- [推理与服务化](../../examples/service/service.md)
 
 ## 特性介绍
 

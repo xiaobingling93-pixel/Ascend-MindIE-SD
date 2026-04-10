@@ -8,53 +8,43 @@ It provides Ascend-oriented fused operators, compilation paths, caching strategi
 
 ### Getting Started
 
-- [English Overview](en/README.md)
 - [English Quick Start](en/quick_start.md)
 - [English Installation Guide](en/installing_guide.md)
-- [English User Guide](en/menu_user_manual.md)
-- [Chinese Overview](zh/index.md)
-- [Quick Start (Chinese)](zh/quick_start.md)
-- [Installation Guide (Chinese)](zh/installing_guide.md)
+- [Chinese Quick Start](zh/quick_start.md)
+- [Chinese Installation Guide](zh/installing_guide.md)
 
 ### User Guide
 
-- [Architecture](en/architecture.md)
-- [English Environment Variables](en/environment_variable_configuration.md)
-- [English Supported Matrix](en/features/supported_matrix.md)
-- [English Cache](en/features/cache.md)
-- [English Parallelism](en/features/parallelism.md)
-- [English Sparse Quantization](en/features/sparse_quantization.md)
-- [English Compilation](en/features/compilation.md)
-- [English DyEPLB](en/features/DyEPLB.md)
-- [English Graphics Memory Optimization](en/features/graphics_memory_optimization.md)
-- [English Other Features](en/features/others.md)
-- [Chinese Supported Matrix](zh/features/supported_matrix.md)
-- [Chinese Cache](zh/features/cache.md)
-- [Chinese Parallelism](zh/features/parallelism.md)
-- [Chinese Sparse Quantization](zh/features/sparse_quantization.md)
-- [Chinese Compilation](zh/features/compilation.md)
-- [Chinese DyEPLB](zh/features/DyEPLB.md)
-- [Chinese Graphics Memory Optimization](zh/features/graphics_memory_optimization.md)
-- [Chinese Other Features](zh/features/others.md)
-- [Chinese Environment Variables](zh/environment_variable_configuration.md)
+- [English User Guide](en/menu_user_manual.md)
+- [Chinese User Guide](zh/menu_user_manual.md)
+
+### Developer Docs
+
+- [English Build Guide](en/developer_guide/build_guide.md)
+- [English Test Guide](en/developer_guide/test.md)
+- [English Developer Tooling and Docs](en/developer_guide/tooling.md)
+- [Chinese Build Guide](zh/developer_guide/build_guide.md)
+- [Chinese Test Guide](zh/developer_guide/test.md)
+- [Chinese Developer Tooling and Docs](zh/developer_guide/tooling.md)
+
+### Technical Reports
+
+- [RainFusion 2.0 PDF](tech_report/RainFusion2.0.pdf)
 
 ### Community
 
-- [Governance (English)](en/community/governance.md)
-- [Governance (Chinese)](zh/community/governance.md)
-- [Roles and Approvers](../OWNERS)
-- [Code of Conduct](../CODE_OF_CONDUCT.md)
+- [English Governance](en/community/governance.md)
+- [Chinese Governance](zh/community/governance.md)
 
 ```{toctree}
 :maxdepth: 2
 :hidden:
 :caption: Getting Started
 
-en/README
-en/quick_start
-en/installing_guide
-en/menu_user_manual
-zh/index
+English Quick Start <en/quick_start>
+English Installation Guide <en/installing_guide>
+Chinese Quick Start <zh/quick_start>
+Chinese Installation Guide <zh/installing_guide>
 ```
 
 ```{toctree}
@@ -62,17 +52,29 @@ zh/index
 :hidden:
 :caption: User Guide
 
-en/architecture
-en/features/supported_matrix
-en/features/cache
-en/features/parallelism
-en/features/sparse_quantization
-en/features/compilation
-en/features/DyEPLB
-en/features/graphics_memory_optimization
-en/features/others
-en/environment_variable_configuration
-zh/environment_variable_configuration
+English User Guide <en/menu_user_manual>
+Chinese User Guide <zh/menu_user_manual>
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Developer Docs
+
+English Build Guide <en/developer_guide/build_guide>
+English Test Guide <en/developer_guide/test>
+English Developer Tooling and Docs <en/developer_guide/tooling>
+Chinese Build Guide <zh/developer_guide/build_guide>
+Chinese Test Guide <zh/developer_guide/test>
+Chinese Developer Tooling and Docs <zh/developer_guide/tooling>
+```
+
+```{toctree}
+:maxdepth: 1
+:hidden:
+:caption: Technical Reports
+
+tech_report/RainFusion2.0.pdf
 ```
 
 ```{toctree}
@@ -80,8 +82,6 @@ zh/environment_variable_configuration
 :hidden:
 :caption: Community
 
-en/community/governance
-zh/community/governance
-../OWNERS
-../CODE_OF_CONDUCT.md
+English Governance <en/community/governance>
+Chinese Governance <zh/community/governance>
 ```

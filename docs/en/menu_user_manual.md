@@ -6,7 +6,6 @@
 - [Quick Start](./quick_start.md)
 - [Installation Guide](./installing_guide.md)
 - [Environment Variable Configuration](./environment_variable_configuration.md)
-- [Inference and Service Examples](../../examples/service/service.md)
 
 ## Feature guides
 
