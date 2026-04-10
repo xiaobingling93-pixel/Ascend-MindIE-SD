@@ -99,8 +99,6 @@
    - 操作系统：选择使用的操作系统，MindIE支持的操作系统请参考硬件配套和支持的操作系统。
    - 业务场景：选择“训练&推理&开发调试”。
 
-   用户在宿主机自行安装Docker（版本要求大于或等于24.x.x）。配置源之前，请确保安装环境能够连接网络。
-
    <br>
 
 2. 安装CANN。
@@ -166,5 +164,5 @@
       4. 输入命令验证是否安装成功
       
             ```bash
-            python3 -c “import torch, torch_npu, mindiesd; print(torch_npu.npu.is_available())"
+            python3 -c "import torch, torch_npu, mindiesd; print(torch_npu.npu.is_available())"
             ```

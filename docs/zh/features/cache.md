@@ -61,7 +61,7 @@
       ```python
       cache_agent = CacheAgent(config)
       # 使能ditcache
-      pipeline.transformer.cache = CacheAgent(cache_config)
+      pipeline.transformer.cache = CacheAgent(config)
       ```
 
   5. 在Transformer的forward方法中使用apply方法使能cache进行推理，其中apply方法第一个入参为block，其余参数与原始代码保持一致

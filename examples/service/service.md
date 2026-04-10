@@ -52,6 +52,6 @@ curl -X POST "http://localhost:6000/generate" \
            "save_disk_path": "test_i2v.mp4",
            "size": "1280*720",
            "sample_guide_scale": [3.5, 3.5],
-           "sample_shift": 5.0,
+           "sample_shift": 5.0
          }'
 ```
