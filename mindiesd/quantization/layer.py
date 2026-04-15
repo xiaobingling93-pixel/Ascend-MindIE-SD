@@ -384,11 +384,7 @@ class W4A4MXFP4DualQuantLinear(W8A8QuantBaseLinear):
         if x.dtype != self.dtype:
             x = x.to(self.dtype)
 
-        if self.mul_scale is not None:
-            x1, l0_scale, l1_scale = torch_npu.npu_dynamic_dual_level_mx_quant(x * self.mul_scale, smooth_scale=None)
-        else:
-            x1, l0_scale, l1_scale = torch_npu.npu_dynamic_dual_level_mx_quant(x, smooth_scale=None)
-
+        x1, l0_scale, l1_scale = torch_npu.npu_dynamic_dual_level_mx_quant(x, smooth_scale=self.mul_scale)
         if self.bias.dtype != torch.float32:
             self.bias = self.bias.to(torch.float32)
 
