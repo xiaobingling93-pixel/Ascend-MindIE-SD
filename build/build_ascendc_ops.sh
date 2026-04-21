@@ -199,6 +199,13 @@ fi
 
 if [ "${PARENT_JOB}" == "false" ];then
     CPU_NUM=$(($(cat /proc/cpuinfo | grep "^processor" | wc -l)*2))
+    if [ -n "${BUILD_JOB_NUM}" ]; then
+         CPU_NUM=${BUILD_JOB_NUM}
+         echo "ariel Using BUILD_JOB_NUM from environment: ${CPU_NUM}"
+     else
+         CPU_NUM=$(($(cat /proc/cpuinfo | grep "^processor" | wc -l)*2))
+         echo "ariel Using default CPU_NUM: ${CPU_NUM}"
+     fi
     JOB_NUM="-j${CPU_NUM}"
 fi
 
