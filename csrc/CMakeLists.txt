@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(PTAExtensionOPS)
 
 execute_process(
-  COMMAND python3 -c "import site; print(site.getsitepackages()[0])"
+  COMMAND python3 -c "import os;import torch; print(os.path.dirname(os.path.dirname(torch.__file__)))"
   OUTPUT_VARIABLE python_site_packages_path
 )
 string(STRIP "${python_site_packages_path}" python_site_packages_path)
@@ -49,7 +49,7 @@ add_library(PTAExtensionOPS SHARED
     ./plugin/find_op_path.cpp
     ./plugin/la_preprocess.cpp
     ./plugin/rainfusionattention.cpp
-    ./plugin/block_sparse_attention.cpp
+    ./plugin/ada_block_sparse_attention.cpp
     ./plugin/sparse_block_estimate.cpp
     ./plugin/layernorm.cpp)
 

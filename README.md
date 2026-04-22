@@ -22,25 +22,28 @@
 ## 🔍目录结构
 
 ```txt
-- mindiesd
-  |- benchmark          // 提供核心kernel的性能看护和compilation的加速效果看护
-  |- csrc               // 昇腾kernel代码位置
-  |- examples
-    |- service          // 服务化样例：将命令行模式改造成服务化方式。
-    |- mmInfer          // 多模态视图生成的样例
-  |- mindiesd
-    |- cache            // 高阶特性：提供cache能力
-    |- quantization     // 高阶特性：提供量化能力
-    |- parallelism      // 高阶特性：提供自动并行能力
-    |- layer            // 提供基础的pytorch的layer接口
-    |- compilation      // 提供编译能力，基于fx graph实现自动改图（可依旧保持单算子下发）。
-  |- tests              // 测试用例
+|- benchmarks         // 提供核心kernel的性能看护和compilation的加速效果看护
+|- build              // 编译脚本
+|- csrc               // 昇腾kernel代码位置
+|- docs               // 项目文档
+|- examples
+  |- cache            // cache特性样例：使能cache进行模型加速
+  |- service          // 服务化样例：将命令行模式改造成服务化方式
+  |- wan              // 模型推理样例：模型推理命令以及参数配置
+|- mindiesd
+  |- cache_agent      // 高阶特性：提供cache能力
+  |- compilation      // 提供编译能力，基于fx graph实现自动改图（可依旧保持单算子下发）。
+  |- eplb             // 高阶特性：提供专家并行负载均衡能力
+  |- layers           // 提供基础的pytorch的layer接口
+  |- quantization     // 高阶特性：提供量化能力
+  |- utils            // 核心工具模块，提供共享的基础设施服务和通用功能
+|- tests              // 测试用例
 ```
-
+    
 ## 🚀 架构介绍及关键特性
 
 MindIE SD 架构和关键特性详见[架构介绍](docs/zh/architecture.md)。
-MindIE SD 支持🤗 [魔乐社区](https://modelers.cn/models?name=MindIE&page=1&size=16) 🤗 vLLM Omni 🤗 Cache Dit 等框架/社区，现已支持主流扩散模型，对于部分 diffusers 模型进行了昇腾硬件亲和的加速改造，详见[模型/框架支持情况](docs/zh/features/supported_matrix.md)，模型也支持手动改造，详见 examples。
+MindIE SD 支持[魔乐社区](https://modelers.cn/models?name=MindIE&page=1&size=16)、vLLM Omni、Cache Dit等框架/社区，现已支持主流扩散模型，对于部分 diffusers 模型进行了昇腾硬件亲和的加速改造，详见[模型/框架支持情况](docs/zh/features/supported_matrix.md)，模型也支持手动改造，详见 examples。
 
 ## ⚡️ 快速开始
 

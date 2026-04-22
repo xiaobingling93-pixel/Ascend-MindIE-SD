@@ -12,6 +12,8 @@
 ### 2.1 任务进入
 
 - 先识别任务类型：实现、修复、文档、治理、模板、流程、版本策略。
+- 当请求包含 `commit`、`提交`、`rebase`、`squash`、`cherry-pick`、`PR`、`MR`、模板、发布、版本策略等关键词时，优先判定是否属于治理/流程类任务。
+- 当请求包含 `docs`、`文档`、`README`、`中英文`、`Sphinx`、`Read the Docs`、`文档网站`、`编译`、`index.md`、`menu_user_manual.md` 等关键词时，优先判定是否属于文档类任务，并继续检查是否需要加载本仓库治理 skill。
 - 先确认目标文件和目标行为，再决定读取范围。
 - 不因为用户提到一个概念就默认读取整仓。
 
@@ -40,13 +42,15 @@
 - 确认目标文件是否为当前任务的真实来源文件。
 - 确认是否存在历史基线、旧实现或现成模板可恢复。
 - 确认是否会扩大 public API、版本源或 contributor workflow。
-- 需要借助 skill 时，先找本仓库最贴合当前任务的 skill，再决定是否补充参考外部 skill 仓库。
+- 涉及 commit message、提交历史整理、PR/MR 标题或正文、模板、版本策略时，必须先读取本仓库最贴合当前任务的 skill，再决定是否补充参考外部 skill 仓库。
+- 涉及 `docs/` 文档内容、双语同步、首页目录、Sphinx 或 Read the Docs 构建时，必须先读取 `.agents/skills/mindie-sd-community-governance/SKILL.md`，再决定是否补充参考外部 skill 仓库。
 
 ### 2.6 交付输出
 
 - 输出优先给结论。
 - 结论后给依据文件。
 - 最后给后续动作、验证命令或未验证项。
+- 涉及提交、提交历史整理、推送、PR 或 MR 时，必须主动给出可直接使用的 commit 标题、PR 标题和 PR 正文草案；不能只说明格式规则。
 - 不把长文复述当作交付。
 
 ## 3. 资源定义
@@ -108,7 +112,18 @@
 - 优先查看本仓库 `.agents/skills/` 中是否已有最贴合当前任务的 skill。
 - 本仓库没有合适 skill，或本地 skill 缺少必要规范时，再参考 `https://gitcode.com/Ascend/agent-skills`。
 - 只选择最小、最贴合当前任务的 skill，不做全量加载。
-- `AGENTS.md` 只负责说明 skill 参考原则，不在这里硬编码“什么场景必须用什么 skill”。
+- 对高风险流程类任务，`AGENTS.md` 允许显式指定必须优先加载的本地 skill。
+- 以下请求必须先读取 `.agents/skills/mindie-sd-community-governance/SKILL.md`：
+- commit message 格式调整
+- 提交拆分、压缩、rebase、cherry-pick 或历史整理
+- PR / MR 标题与正文格式
+- PR / Issue 模板
+- contributor workflow、治理规则、版本策略
+- `docs/` 下文档内容修改
+- 中文 / 英文配套文档检查
+- `docs/index.md`、`menu_user_manual.md`、developer guide 入口调整
+- `docs/conf.py`、`.readthedocs.yaml`、`docs/requirements-docs.txt` 修改
+- 文档网站编译、Sphinx、Read the Docs 相关问题
 - skill 与本文件冲突时，当前任务直接采用的 skill 优先于本文件；未命中 skill 的任务按本文件默认工作流执行。
 
 ## 6. 最小交付要求

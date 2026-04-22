@@ -27,6 +27,7 @@ class QuantAlgorithm(StrEnum):
     W8A8_DYNAMIC = "W8A8_DYNAMIC"
     W4A4_DYNAMIC = "W4A4_DYNAMIC"
     W8A8_MXFP8 = "W8A8_MXFP8"
+    W4A4_MXFP4_DYNAMIC = "W4A4_MXFP4"
     W8A16 = "W8A16"
     W4A16 = "W4A16"
     W4A16_AWQ = "W4A16_AWQ"
@@ -62,6 +63,7 @@ W4A4_LIST = [
     QuantAlgorithm.W4A4_MXFP4_SVD,
     QuantAlgorithm.W4A4_MXFP4_DUALSCALE,
     QuantAlgorithm.W4A4_DYNAMIC,
+    QuantAlgorithm.W4A4_MXFP4_DYNAMIC,
 ]
 
 
@@ -184,6 +186,7 @@ class QuantMode():
             QuantAlgorithm.W8A8_MXFP8: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
             QuantAlgorithm.W4A4_MXFP4_SVD: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
             QuantAlgorithm.W4A4_MXFP4_DUALSCALE: QuantMode.use_smooth_quant(per_token=False, per_channel=False),
+            QuantAlgorithm.W4A4_MXFP4_DYNAMIC: QuantMode.use_smooth_quant(per_token=True, per_channel=True),
         }
         return quant_mode_map.get(quant_algo, QuantMode(0))
 

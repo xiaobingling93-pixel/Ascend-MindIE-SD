@@ -1,50 +1,71 @@
 # 测试
 
-## 自测方法
+## CPU 友好单元测试
 
-本章节介绍MindIE SD仓算子自测方式，看护算子精度。
+推荐优先使用仓库当前提供的 CPU 友好 UT 入口，生成覆盖率与测试产物。
 
-1. 使用以下命令卸载MindIE SD
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-test.txt
+bash tests/run_UT_test.sh
+```
 
-    ```bash
-    pip uninstall mindiesd
-    ```
+默认生成的产物位于 `tests/UT/` 目录，包括：
 
-2. 运行全量UT测试用例。
-    
-    ```bash
-    pip install -r MindIE-SD/requirements.txt
-    pip install coverage
-    cd MindIE-SD/tests
-    bash run_test.sh
-    ```
+- `run_UT.log`
+- `final.xml`
+- `coverage.xml`
+- `htmlcov/`
 
-3. 运行LA单算子精度测试用例。
+仓库中的 `tests/scripts/check_coverage.py` 用于在 CI 中校验新增 Python 文件的覆盖率门禁。
 
-    修改MindIE-SD/tests/plugin/la_acc_prof.py文件，选择Option 1或Option 2，通过加载test_la.csv或enumerated_cases.csv文件，测试LA算子在所设置shape下的精度。
+## 全量测试入口
 
-   - "./tests/plugin/test_la.csv"：设置了常用SD模型的输入shape。
-   - "enumerated_cases.csv"：枚举的各种shape。
+当环境具备 Ascend/NPU 运行栈时，可使用现有包装脚本执行全量或按模式测试：
 
-    完成修改后执行以下命令：
-    
-    ```bash
-    cd MindIE-SD/tests
-    python plugin/la_acc_prof.py
-    ```
+```bash
+bash tests/run_test.sh --all
+```
 
-    运行成功后会在MindIE-SD目录下保存acc_output_results_1.csv和acc_output_results_1.csv两个结果文件，记录了la和fascore的相似度，可查看算子在所需shape下的精度。
+可选参数：
 
-## 问题定位
+- `--cpu_only`
+- `--npu_only`
+- `--all`
 
-1. 常见异常说明。
+## LA 单算子精度测试
 
-    在使用MindIE SD进行推理业务时，模型相关文件（权重、配置、模型代码等）的安全性需由用户保证，常见的异常如下：
-    - 如用户在模型初始化的时候，用户修改模型配置的默认参数可能会影响模型接口，若权重文件过大或配置文件中参数过大，可能会导致由out of memory导致的报错信息，例如："RuntimeError: NPU out of memory. Tried to allocate xxx GiB."。
-    - 使用模型推理时，模型内部会进行推理计算，若用户输入的tensor shape过大，可能会出现由out of memory导致的报错信息，例如："RuntimeError: NPU out of memory. Tried to allocate xxx GiB."。
-    - 在使用MindIE SD进行生成业务时，如果出现错误输入、环境不适配等问题时，代码中会抛出异常，需要用户在上层进行异常捕获处理，常见的异常类型见表格：
+本章节介绍 MindIE SD 仓中 LA 算子的精度自测方式。
 
-        |异常类型|说明|
-        |--|--|
-        |ZeroDivisionError|除0异常。|
-        |ValueError|参数值异常。|
+1. 如需切换已安装版本，可先卸载当前 MindIE SD：
+
+   ```bash
+   pip uninstall mindiesd
+   ```
+
+2. 修改 `tests/plugin/la_acc_prof.py` 文件，选择 Option 1 或 Option 2，通过加载 `test_la.csv` 或 `enumerated_cases.csv` 文件，测试 LA 算子在所设置 shape 下的精度。
+
+   - `./tests/plugin/test_la.csv`：设置了常用 SD 模型的输入 shape。
+   - `enumerated_cases.csv`：枚举的各种 shape。
+
+3. 完成修改后执行以下命令：
+
+   ```bash
+   cd tests
+   python plugin/la_acc_prof.py
+   ```
+
+运行成功后会在仓库目录下生成结果文件，记录 LA 和 FAScore 的相似度，可据此查看算子在目标 shape 下的精度表现。
+
+## 常见异常说明
+
+在使用 MindIE SD 进行推理业务时，模型相关文件（权重、配置、模型代码等）的安全性需由用户保证，常见的异常如下：
+
+- 如用户在模型初始化时修改模型配置的默认参数，可能影响模型接口；若权重文件过大或配置文件参数过大，可能会触发内存不足报错，例如：`RuntimeError: NPU out of memory. Tried to allocate xxx GiB.`。
+- 使用模型推理时，若输入的 tensor shape 过大，也可能触发类似的内存不足报错。
+- 在使用 MindIE SD 进行生成业务时，如果出现错误输入、环境不适配等问题，代码中会抛出异常，需要用户在上层进行异常捕获处理。常见异常类型如下：
+
+| 异常类型 | 说明 |
+| -- | -- |
+| ZeroDivisionError | 除 0 异常。 |
+| ValueError | 参数值异常。 |

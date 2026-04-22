@@ -112,7 +112,9 @@
     x = x.reshape(batch, seqlen_chunk, hiddensize)
 
     # 4、对seqlen维度进行all_gather操作
-    x = dist.all_gather(x, dim=1)
+    output_list = [torch.empty_like(x) for _ in range(world_size)]
+    dist.all_gather(output_list, x)
+    x = torch.cat(output_list, dim=1)
     ```
 
 ---

@@ -47,7 +47,7 @@ def avgpool(input_tensor, pool_size=128, input_layout='BNSD'): # BSND in,  BSND 
             output_tensor = full_pooled
         else:
             output_tensor = tail_pooled
-    elif input_layout == "BNSD":
+    else:
         batch, headnum, seqlen, dim = input_tensor.shape
         num_full_blocks = seqlen // pool_size
         tail_size = seqlen % pool_size
@@ -102,7 +102,7 @@ def get_blockwise_mask(
     query_pool, key_pool, value_pool = torch.chunk(qkv_pool, 3, dim=0)
     if input_layout == "BSND":
         attn_scores_head = torch.einsum("blnd,bsnd->bnls", query_pool, key_pool) * scale
-    elif input_layout == "BNSD":
+    else:
         attn_scores_head = torch.einsum("bnld,bnsd->bnls", query_pool, key_pool) * scale
     score_matrix = torch.nn.functional.softmax(attn_scores_head, dim=-1)
 
@@ -140,6 +140,8 @@ def rearrange_with_remaining(tensor, latent_shape_q, latent_shape_k, input_layou
         b, s, n, d = tensor.shape
 
         if (hq % 8 != 0) or (wq % 8 != 0):
+            tensor_h_r = None
+            tensor_w_r = None
             tensor_first = tensor[:, :first_frame_len, :, :]
             tensor = tensor[:, first_frame_len:, :, :]
             tensor_hwt = rearrange(tensor, 'b (f h w) n d -> b f h w n d', f=frame_num - 1, h=hq, w=wq)
@@ -160,9 +162,11 @@ def rearrange_with_remaining(tensor, latent_shape_q, latent_shape_k, input_layou
         else:
             tensor_hwt = rearrange(tensor, 'b (f hn hb wn wb) n d -> b (f hn wn hb wb) n d', f=frame_num, hb=8, wb=8,
                                 hn=hq // 8, wn=wq // 8)
-    elif input_layout == "BNSD":
+    else:
         b, n, s, d = tensor.shape
         if (hq % 8 != 0) or (wq % 8 != 0):
+            tensor_h_r = None
+            tensor_w_r = None
             tensor_first = tensor[:, :, :first_frame_len, :]
             tensor = tensor[:, :, first_frame_len:, :]
             tensor_hwt = rearrange(tensor, 'b n (f h w) d -> b n f h w d', f=frame_num - 1, h=hq, w=wq)
@@ -183,53 +187,94 @@ def rearrange_with_remaining(tensor, latent_shape_q, latent_shape_k, input_layou
         else:
             tensor_hwt = rearrange(tensor, 'b n (f hn hb wn wb) d -> b n (f hn wn hb wb) d', f=frame_num, hb=8, wb=8,
                                 hn=hq // 8, wn=wq // 8)
-
     return tensor_hwt
 
 
-def inv_rearrange_with_remaining(tensor, latent_shape_q, latent_shape_k, input_layout): # BSND in ,  BSND out
+def inv_rearrange_with_remaining(tensor, latent_shape_q, latent_shape_k, input_layout):
+    '''
+    b (f hn wn hb wb) n d -> b (f hn hb wn wb) n d
+    or
+    b n (f hn wn hb wb) d -> b n (f hn hb wn wb) d
+    '''
     tq, hq, wq = latent_shape_q
     first_frame_len, frame_num = hq * wq, tq
+    r_h = hq % 8
+    r_w = wq % 8
+    h_main = hq - r_h
+    w_main = wq - r_w
+
     if input_layout == "BSND":
         b, s, n, d = tensor.shape
 
-        if (hq % 8 != 0) or (wq % 8 != 0):
+        if (r_h != 0) or (r_w != 0):
             tensor_first = tensor[:, :first_frame_len, :, :]
             tensor = tensor[:, first_frame_len:, :, :]
-            tensor_hwt = rearrange(tensor, 'b (f h w) n d -> b f h w n d', f=frame_num - 1, h=hq, w=wq)
-            if hq % 8 != 0:
-                tensor_hwt, tensor_h_r = torch.split(tensor_hwt, hq - (hq % 8), dim=2)
-            if wq % 8 != 0:
-                tensor_hwt, tensor_w_r = torch.split(tensor_hwt, wq - (wq % 8), dim=3)
-            tensor_hwt = tensor_hwt.reshape(b, frame_num - 1, -1, n, d)
+            tensor = tensor.reshape(b, frame_num - 1, hq * wq, n, d)
+
+            split_sizes = [h_main * w_main]
+            if r_h != 0:
+                split_sizes.append(r_h * wq)
+            if r_w != 0:
+                split_sizes.append(h_main * r_w)
+
+            parts = torch.split(tensor, split_sizes, dim=2)
+            tensor_hwt = parts[0]
+            idx = 1
+            if r_h != 0:
+                tensor_h_r = parts[idx]
+                idx += 1
+            if r_w != 0:
+                tensor_w_r = parts[idx]
+
             tensor_hwt = rearrange(tensor_hwt, 'b f (hn wn hb wb) n d -> b f (hn hb) (wn wb) n d', f=frame_num - 1,
                                    hb=8, wb=8, hn=hq // 8, wn=wq // 8)
-            if wq % 8 != 0:
+
+            if r_w != 0:
+                tensor_w_r = tensor_w_r.reshape(b, frame_num - 1, h_main, r_w, n, d)
                 tensor_hwt = torch.cat((tensor_hwt, tensor_w_r), dim=3)
-            if hq % 8 != 0:
+
+            if r_h != 0:
+                tensor_h_r = tensor_h_r.reshape(b, frame_num - 1, r_h, wq, n, d)
                 tensor_hwt = torch.cat((tensor_hwt, tensor_h_r), dim=2)
+
             tensor_hwt = tensor_hwt.reshape(b, -1, n, d)
             tensor_hwt = torch.cat([tensor_first, tensor_hwt], dim=1)
         else:
             tensor_hwt = rearrange(tensor, 'b (f hn wn hb wb) n h -> b (f hn hb wn wb) n h', f=frame_num, hb=8, wb=8,
                                 hn=hq // 8, wn=wq // 8)
-    elif input_layout == "BNSD":
+    else:
         b, n, s, d = tensor.shape
-        if (hq % 8 != 0) or (wq % 8 != 0):
+        if (r_h != 0) or (r_w != 0):
             tensor_first = tensor[:, :, :first_frame_len, :]
             tensor = tensor[:, :, first_frame_len:, :]
-            tensor_hwt = rearrange(tensor, 'b n (f h w) d -> b n f h w d', f=frame_num - 1, h=hq, w=wq)
-            if hq % 8 != 0:
-                tensor_hwt, tensor_h_r = torch.split(tensor_hwt, hq - (hq % 8), dim=3)
-            if wq % 8 != 0:
-                tensor_hwt, tensor_w_r = torch.split(tensor_hwt, wq - (wq % 8), dim=4)
-            tensor_hwt = tensor_hwt.reshape(b, n, frame_num - 1, -1, d)
+            tensor = tensor.reshape(b, n, frame_num - 1, hq * wq, d)
+
+            split_sizes = [h_main * w_main]
+            if r_h != 0:
+                split_sizes.append(r_h * wq)
+            if r_w != 0:
+                split_sizes.append(h_main * r_w)
+
+            parts = torch.split(tensor, split_sizes, dim=3)
+            tensor_hwt = parts[0]
+            idx = 1
+            if r_h != 0:
+                tensor_h_r = parts[idx]
+                idx += 1
+            if r_w != 0:
+                tensor_w_r = parts[idx]
+
             tensor_hwt = rearrange(tensor_hwt, 'b n f (hn wn hb wb) d -> b n f (hn hb) (wn wb) d', f=frame_num - 1,
                                    hb=8, wb=8, hn=hq // 8, wn=wq // 8)
-            if hq % 8 != 0:
-                tensor_hwt = torch.cat((tensor_hwt, tensor_h_r), dim=3)
-            if wq % 8 != 0:
+
+            if r_w != 0:
+                tensor_w_r = tensor_w_r.reshape(b, n, frame_num - 1, h_main, r_w, d)
                 tensor_hwt = torch.cat((tensor_hwt, tensor_w_r), dim=4)
+
+            if r_h != 0:
+                tensor_h_r = tensor_h_r.reshape(b, n, frame_num - 1, r_h, wq, d)
+                tensor_hwt = torch.cat((tensor_hwt, tensor_h_r), dim=3)
+
             tensor_hwt = tensor_hwt.reshape(b, n, -1, d)
             tensor_hwt = torch.cat([tensor_first, tensor_hwt], dim=2)
         else:
@@ -247,7 +292,7 @@ def do_tensor_rearrange_pooling(query, key, value, text_len, pool_size, latent_s
         if input_layout == "BSND":
             tensor_t = tensor[:, :text_len, :, :]
             tensor_i = tensor[:, text_len:, :, :]
-        elif input_layout == "BNSD":
+        else:
             tensor_t = tensor[:, :, :text_len, :]
             tensor_i = tensor[:, :, text_len:, :]
         tensor_i_2 = rearrange_with_remaining(tensor_i, latent_shape_q, latent_shape_k, input_layout)
@@ -256,7 +301,7 @@ def do_tensor_rearrange_pooling(query, key, value, text_len, pool_size, latent_s
         if input_layout == "BSND":
             tensor = torch.concat((tensor_i_2, tensor_t), dim=1)
             tensor_pool = torch.concat((tensor_i_pool, tensor_t_pool), dim=1)
-        elif input_layout == "BNSD":
+        else:
             tensor = torch.concat((tensor_i_2, tensor_t), dim=2)
             tensor_pool = torch.concat((tensor_i_pool, tensor_t_pool), dim=2)
     else:

@@ -198,6 +198,10 @@ static ge::graphStatus SetDataShape(
     const gert::StorageShape *QueryShape = context->GetInputShape(0);
     const gert::StorageShape *KeyShape = context->GetInputShape(1);
 
+    if (QueryShape == nullptr || KeyShape == nullptr) {
+        return ge::GRAPH_FAILED;
+    }
+    
     const gert::Tensor *tempData = context->GetOptionalInputTensor(ACTUAL_SEQ_Q_INDEX);
     const gert::Tensor *tempDataKV = context->GetOptionalInputTensor(ACTUAL_SEQ_KV_INDEX);
     uint32_t actualLenDims = (tempData != nullptr && tempData->GetData<int64_t>() != nullptr)

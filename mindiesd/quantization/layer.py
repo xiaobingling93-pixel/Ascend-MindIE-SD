@@ -299,6 +299,8 @@ class FP8RotateQuantFA(nn.Module):
             _, n, s, d = query.shape
         elif layout == "BSND":
             _, s, n, d = query.shape
+        else:
+            raise ValueError(f"Unsupported layout: {layout}, expected 'BNSD' or 'BSND'.")
     
         x = torch_npu.npu_fused_infer_attention_score_v2(q, k, v, input_layout=layout,
                                                             num_query_heads=n,
@@ -382,11 +384,7 @@ class W4A4MXFP4DualQuantLinear(W8A8QuantBaseLinear):
         if x.dtype != self.dtype:
             x = x.to(self.dtype)
 
-        if self.mul_scale is not None:
-            x1, l0_scale, l1_scale = torch_npu.npu_dynamic_dual_level_mx_quant(x * self.mul_scale, smooth_scale=None)
-        else:
-            x1, l0_scale, l1_scale = torch_npu.npu_dynamic_dual_level_mx_quant(x, smooth_scale=None)
-
+        x1, l0_scale, l1_scale = torch_npu.npu_dynamic_dual_level_mx_quant(x, smooth_scale=self.mul_scale)
         if self.bias.dtype != torch.float32:
             self.bias = self.bias.to(torch.float32)
 
@@ -412,5 +410,52 @@ class W4A4MXFP4DualQuantLinear(W8A8QuantBaseLinear):
         weight = get_quant_weight(weights, f'{prefix}.weight')
         weight = torch_npu.npu_dtype_cast(weight.npu(), torch_npu.float4_e2m1fn_x2)
         if kwargs.get('use_nz', False):
-            weight = torch_npu.npu_format_cast(weight.view(torch.int8), 29, torch.int8)
+            weight = torch_npu.npu_format_cast(weight.view(torch.int8), 29, customize_dtype=torch.int8)
+        self.register_buffer("weight", weight, persistent=False)
+
+
+class W4A4MXFP4QuantLinear(W8A8QuantBaseLinear):
+    def __init__(self, in_features, out_features, bias=True, weights=None, prefix=None, **kwargs):
+        super().__init__(in_features, out_features, bias, weights, prefix, **kwargs)
+
+        self.is_dynamic = True
+        self._init_dynamic_quant_param(prefix, weights, **kwargs)
+
+    def quant_matmul(self, x):
+        if x.dtype != self.dtype:
+            x = x.to(self.dtype)
+
+        if self.mul_scale is not None:
+            x1, input_scale = torch_npu.npu_dynamic_mx_quant(x * self.mul_scale)
+        else:
+            x1, input_scale = torch_npu.npu_dynamic_mx_quant(x)
+
+        if self.bias.dtype != torch.float32:
+            self.bias = self.bias.to(torch.float32)
+
+        x2 = self.weight
+        x2 = x2.transpose(0, 1)
+
+        output = torch_npu.npu_quant_matmul(
+                            x1,
+                            x2,
+                            self.weight_scale.transpose(0, 1),
+                            scale_dtype=torch_npu.float8_e8m0fnu,
+                            x1_dtype=torch_npu.float4_e2m1fn_x2,
+                            x2_dtype=torch_npu.float4_e2m1fn_x2,
+                            pertoken_scale=input_scale,
+                            pertoken_scale_dtype=torch_npu.float8_e8m0fnu,
+                            bias=self.bias,
+                            output_dtype=self.dtype,
+                            group_sizes=[1, 1, 32]
+                            )
+        return output
+
+    def _init_dynamic_quant_param(self, prefix=None, weights=None, **kwargs):
+        weight_scale = get_quant_weight(weights, f'{prefix}.weight_scale')
+        weight_scale = weight_scale.reshape(weight_scale.shape[0], -1, 2)
+        self.register_buffer("weight_scale", weight_scale, persistent=False)
+
+        weight = get_quant_weight(weights, f'{prefix}.weight')
+        weight = torch_npu.npu_dtype_cast(weight.npu(), torch_npu.float4_e2m1fn_x2)
         self.register_buffer("weight", weight, persistent=False)

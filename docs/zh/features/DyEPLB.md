@@ -31,7 +31,7 @@
   1. 执行以下命令启动EPLB算法进程。
 
      ```console
-      root@node134:/home# python -m mindiesd.eplb.eplb_scheduler --world_size 2 --host localhost -- port 50001 --mode A2A
+      python -m mindiesd.eplb.eplb_scheduler --world_size 2 --host localhost --port 50001 --mode A2A
      ```
 
      部分启动参数解释如下所示：

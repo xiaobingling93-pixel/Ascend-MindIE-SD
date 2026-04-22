@@ -8,7 +8,7 @@ ci:
 
 repos:
   # pre-commit 基础检查
-  - repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://gitcode.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
@@ -53,15 +53,15 @@ repos:
 
 #--------------- C++ 核心检查 ---------------------------------------------
   # clang-format：C/C++ 代码格式化
-  - repo: https://github.com/pre-commit/mirrors-clang-format
+  - repo: https://gitcode.com/pre-commit-clang/mirrors-clang-format
     rev: v18.1.8
     hooks:
       - id: clang-format
         files: \.(c|h|cpp|hpp|cc|hh|cxx|hxx)$
         types_or: [c, c++]
-        args: [--style=google, --verbose, -i] 
-        exclude: ^build/|^tests/third_party/ 
-        
+        args: ["--style={BasedOnStyle: google, IndentWidth: 4}"]
+        exclude: ^build/|^tests/third_party/
+
   # markdownlint：Markdown 格式检查（仅CI手动执行）
   - repo: https://gitcode.com/gh_mirrors/ma/markdownlint-cli
     rev: v0.46.0
